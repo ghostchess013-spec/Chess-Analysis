@@ -1,0 +1,55 @@
+# =====================================================================
+# Artefak build — jangan di-commit
+# =====================================================================
+
+# Hasil samping tools/build_book_merged.py: peta lengkap "FEN -> ECO|Nama"
+# untuk seluruh isi opening book. Ukurannya jauh lebih besar dari
+# js/openings.js (kunci FEN mentah, bukan hash 36), dan hanya dipakai
+# untuk memeriksa hasil build. Book yang benar sudah ada di js/openings.js.
+js/openings.js.ref.json
+*.ref.json
+
+# Sumber buku Polyglot & dataset Lichess (bahan build, bukan hasil)
+*.bin
+a.tsv
+b.tsv
+c.tsv
+d.tsv
+e.tsv
+
+# Hasil kalibrasi / validasi (data lokal, isinya PGN partai pribadi)
+kalibrasi-*.json
+validasi-*.json
+
+# =====================================================================
+# Berkas sistem & editor
+# =====================================================================
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# =====================================================================
+# Node / tooling (proyek ini tanpa build step, tapi jaga-jaga)
+# =====================================================================
+node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Python (tools/build_book_merged.py)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Server lokal untuk uji (worker butuh http://, bukan file://)
+.parcel-cache/
+.cache/
+dist/

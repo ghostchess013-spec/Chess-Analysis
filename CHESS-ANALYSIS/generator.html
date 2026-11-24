@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Opening Book Generator — Lichess Dataset</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; padding: 16px; background: #1a1a1a; color: #eee; }
+  h1 { font-size: 18px; }
+  button { padding: 14px 24px; font-size: 16px; cursor: pointer; background: #81b64c; border: none; color: #fff; border-radius: 6px; font-weight: 800; width: 100%; margin: 12px 0; }
+  button:disabled { opacity: .5; }
+  #status { font-weight: 700; margin: 8px 0; color: #81b64c; }
+  #log { white-space: pre-wrap; font-family: monospace; font-size: 11px; background: #222; padding: 10px; border-radius: 6px; max-height: 50vh; overflow-y: auto; color: #aaa; }
+</style>
+</head>
+<body>
+<h1>♟️ Opening Book Generator <span style="font-size:12px;background:#a33;padding:2px 8px;border-radius:10px;vertical-align:middle">USANG</span></h1>
+<div style="background:#3a2118;border-left:4px solid #e0993a;padding:10px 12px;border-radius:6px;font-size:13px;line-height:1.6">
+  <b>⚠️ Halaman ini USANG (versi lama). Hanya untuk keperluan darurat.</b><br>
+  Dibuat sebelum <code>openings.js</code> versi sekarang (<b>41.648 posisi</b>) dan sesudah tidak pernah diperbarui. Kalau tombol di bawah dijalankan, hasilnya akan <b>menimpa buku pembukaan dengan versi jauh lebih kecil</b>, sehingga pengenalan pembukaan di halaman Review jadi sering meleset.<br>
+  Berkas <code>openings.js</code> yang sekarang sudah benar — <b>jangan dijalankan kecuali Anda memang ingin membuat ulang dari nol.</b>
+</div>
+<p style="margin-top:12px">Menghasilkan <code>openings.js</code> dari dataset Lichess. <b>Dulu</b> halaman ini menyebut “~3.500 opening, CC0”, tapi angka itu sudah tidak benar: dataset <code>lichess-org/chess-openings</code> sudah direstrukturisasi, dan kode di bawah masih memakai format lama — hanya berkas <code>a.tsv</code> sampai <code>e.tsv</code> saja, padahal dataset sekarang bernama <code>a.tsv</code>–<code>e.tsv</code> <i>plus</i> berkas yang diawali <code>eco</code> (mis. <code>ecoA.tsv</code>, <code>ecoB.tsv</code>, <code>ecoC.tsv</code> — berkas inilah yang memuat nama pembukaan). Jadi walaupun berhasil dijalankan, hasilnya tidak lengkap.</p>
+<button id="btn" title="Hanya untuk keperluan darurat: hasilnya menimpa js/openings.js">▶ Mulai Generate</button>
+<div id="status">Siap.</div>
+<div id="log"></div>
+<script>
+const FILES = ['a', 'b', 'c', 'd', 'e'];
+const BASE = 'https://raw.githubusercontent.com/lichess-org/chess-openings/master/';
+
+async function generate() {
+  const btn = document.getElementById('btn');
+  const status = document.getElementById('status');
+  const log = document.getElementById('log');
+  btn.disabled = true;
+  log.textContent = '';
+  const book = {};
+  let total = 0, errors = 0;
+
+  for (const f of FILES) {
+    status.textContent = 'Mengunduh ' + f + '.tsv…';
+    log.textContent += '→ Fetch ' + f + '.tsv\n';
+    try {
+      const res = await fetch(BASE + f + '.tsv');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      const lines = text.split(/\r?\n/);
+      let added = 0;
+      // Skip header (baris 0)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parts = line.split('\t');
+        if (parts.length < 3) continue;
+        const eco = parts[0].trim();
+        const name = parts[1].trim();
+        const pgn = parts[2].trim();
+        if (!eco || !name || !pgn) continue;
+        try {
+          const c = new Chess();
+          c.load_pgn(pgn);
+          const fen = c.fen();
+          const key = fen.split(' ').slice(0, 2).join(' ');
+          book[key] = eco + '|' + name;
+          added++; total++;
+        } catch (e) { errors++; }
+      }
+      log.textContent += '   ✓ ' + f + '.tsv → ' + added + ' opening (total ' + total + ')\n';
+    } catch (e) {
+      log.textContent += '   ✗ GAGAL: ' + e.message + '\n';
+    }
+  }
+
+  status.textContent = 'Menulis file…';
+  let out = '/* Opening book — di-generate dari dataset Lichess (CC0) */\n';
+  out += '/* Total: ' + total + ' opening, ' + errors + ' error */\n';
+  out += '/* https://github.com/lichess-org/chess-openings */\n';
+  out += '(function () {\n  window.OPENING_BOOK = {\n';
+  const keys = Object.keys(book);
+  keys.forEach((k, i) => {
+    const v = book[k].replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    out += '    "' + k + '": "' + v + '"' + (i < keys.length - 1 ? ',' : '') + '\n';
+  });
+  out += '  };\n})();\n';
+
+  const blob = new Blob([out], { type: 'text/javascript' });
+  /* PERINGATAN: berkas ini akan menimpa js/openings.js milik aplikasi. Simpan dulu salinan
+     js/openings.js sebelum menjalankan, karena buku lama (41.648 posisi) jauh lebih lengkap. */
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'openings.js';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+  status.textContent = '✅ Selesai! ' + total + ' opening. File openings.js terunduh.';
+  log.textContent += '\n✅ SELESAI. Cek folder Download → pindahkan openings.js ke chess-review/js/\n';
+  btn.disabled = false;
+}
+
+document.getElementById('btn').addEventListener('click', generate);
+</script>
+</body>
+</html>

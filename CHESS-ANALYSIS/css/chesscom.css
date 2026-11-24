@@ -1,0 +1,26 @@
+/* Tampilan Chess.com: papan/bidak bergambar, ikon klasifikasi PNG, logo, pemilih di Pengaturan */
+
+/* papan bergambar: gambar 8x8 jadi latar, kotak transparan (warna --light/--dark tetap jadi cadangan & warna koordinat) */
+body.img-board .board { background-image: var(--board-img); background-size: 100% 100%; background-repeat: no-repeat; background-color: var(--dark); }
+body.img-board .sq.light, body.img-board .sq.dark { background: transparent; }
+
+/* bidak: set 3D berukuran 150x156 diratakan ke kotak (tanpa terpotong) */
+.board-pieces .pc { background-size: var(--pc-bg, 100%); }
+
+/* ikon klasifikasi (PNG dari Chess.com) */
+img.cls-icon { display: inline-block; vertical-align: middle; object-fit: contain; -webkit-user-drag: none; user-select: none; }
+.badge img { width: 100%; height: 100%; display: block; }
+
+/* logo */
+.brand img.logo-pawn { display: block; width: auto; height: 34px; flex: 0 0 auto; }
+.brand img.logo-full { display: block; width: auto; height: 22px; }
+@media (max-width: 1100px) { .brand img.logo-full { display: none; } }
+
+/* pemilih papan dan bidak di Pengaturan */
+.set-block { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.set-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+.set-label b { color: var(--muted); font-weight: 600; font-size: 13px; text-align: right; }
+.pick-strip { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.pick-item { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 6px; border: 2px solid transparent; padding: 0; background-color: #3c3a37; background-size: cover; background-position: center; background-repeat: no-repeat; scroll-snap-align: start; cursor: pointer; }
+.pick-item.pc-item { background-size: 88%; background-color: #4b4847; }
+.pick-item.active { border-color: #fff; }

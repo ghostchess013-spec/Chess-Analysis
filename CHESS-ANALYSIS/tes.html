@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tes Komponen</title></head>
+<body style="font-family:monospace;padding:16px;background:#222;color:#eee;line-height:1.5">
+<h2>Tes Komponen</h2><div id="log"></div>
+<script src="js/chess.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/engine-config.js"></script>
+<script>
+/* Tes langsung memakai jalur berkas engine dari js/engine-config.js (satu sumber kebenaran).
+   CATATAN: jalur ini juga sudah dinormalkan oleh js/engine-config.js, jadi tes ini mengukur jalur
+   yang benar; jalur itulah yang dipakai index.html saat benar-benar menjalankan engine. */
+var EC_CFG = window.ENGINE_CONFIG || null;
+var ENGINE = (EC_CFG && EC_CFG.full && EC_CFG.full.js) || 'engine/stockfish-19-single.js';
+var WASM = (EC_CFG && EC_CFG.full && EC_CFG.full.wasm) || ENGINE.replace(/\.js$/, '.wasm');
+var box = document.getElementById('log');
+function add(ok, msg) { var d = document.createElement('div'); d.style.color = ok === null ? '#ccc' : ok ? '#81b64c' : '#ff6b6b'; d.textContent = (ok === null ? '… ' : ok ? '✅ ' : '❌ ') + msg; box.appendChild(d); return d; }
+
+(async function () {
+  add(null, 'Alamat halaman: ' + location.href);
+  if (location.protocol === 'file:') add(false, 'Dibuka lewat file:// — worker TIDAK akan jalan. Buka lewat http://localhost.');
+
+  // 1. chess.js + shim
+  try {
+    var c = new Chess();
+    c.loadPgn('1. e4 {[%clk 0:03:00]} e5 {[%clk 0:02:59]} 2. Nf3 {[%clk 0:02:58]}');
+    var h = c.history({ verbose: true });
+    add(!!(h[0].after && h[0].before), 'chess.js: history() punya before/after');
+    add(c.board()[7][4].square === 'e1', 'chess.js: board() punya .square');
+    add(c.getComments().length === 3, 'chess.js: komentar [%clk] terbaca (' + c.getComments().length + '/3)');
+  } catch (e) { add(false, 'chess.js: ' + e.message); }
+  try { add(Object.keys(window.CLS).length > 0, 'icons.js OK'); } catch (e) { add(false, 'icons.js: ' + e.message); }
+
+  try {
+    add(!!EC_CFG, 'engine-config.js terbaca (ENGINE_CONFIG ' + (EC_CFG ? 'ADA' : 'TIDAK ADA — jalur engine di bawah hanya cadangan') + ')');
+    if (EC_CFG) {
+      var lok = []
+        .concat(EC_CFG.full && EC_CFG.full.js, EC_CFG.full && EC_CFG.full.wasm, EC_CFG.lite && EC_CFG.lite.js, EC_CFG.lite && EC_CFG.lite.wasm)
+        .filter(function (v) { return typeof v === 'string' && v; });
+      var abs = lok.filter(function (v) { return /^(https?:|\/)/.test(v) || v.indexOf('://') >= 0; });
+      add(abs.length === 0, 'Jalur engine relatif (cocok untuk sub-folder): ' + (abs.length ? 'ada ' + abs.length + ' jalur absolut → ' + abs.join(', ') : lok.length + ' jalur diperiksa'));
+      add(EC_CFG.full.js.indexOf('nicegen') < 0, 'engine-config.js tidak menunjuk ke nicegen (penulisan lama yang sudah mati)');
+    }
+  } catch (e) { add(false, 'engine-config.js: ' + e.message); }
+
+  // 2. cek file engine + Content-Type .wasm (penyebab umum gagal muat)
+  try {
+    var r = await fetch(ENGINE); add(r.ok && /javascript/.test(r.headers.get('content-type') || ''), 'JS engine: HTTP ' + r.status + ', ' + r.headers.get('content-type'));
+  } catch (e) { add(false, 'JS engine tidak bisa diambil: ' + e.message); }
+  try {
+    var ac = new AbortController();
+    var rw = await fetch(WASM, { signal: ac.signal });
+    var ct = rw.headers.get('content-type') || '(kosong)', len = rw.headers.get('content-length');
+    ac.abort();
+    add(rw.ok, 'WASM: HTTP ' + rw.status + ', ukuran ' + (len ? (len / 1048576).toFixed(1) + ' MB' : '?'));
+    if (rw.ok && len && EC_CFG && EC_CFG.full && EC_CFG.full.wasmBytes && +len !== EC_CFG.full.wasmBytes) {
+      add(false, 'Ukuran WASM TIDAK SAMA dengan engine-config.js: berkas ' + +len + ' byte, seharusnya ' + EC_CFG.full.wasmBytes + ' byte → .wasm di server kemungkinan terpotong atau tertukar');
+    } else {
+      add(true, 'Ukuran WASM cocok dengan engine-config.js (' + (EC_CFG && EC_CFG.full && EC_CFG.full.wasmBytes ? EC_CFG.full.wasmBytes + ' byte' : 'tidak ada data pembanding') + ')');
+    }
+    add(/application\/wasm/.test(ct), 'WASM Content-Type: ' + ct + (/application\/wasm/.test(ct) ? '' : '  (bukan application/wasm — sudah ditangani patch stockfish-19-single.js)'));
+  } catch (e) { add(false, 'WASM tidak bisa diambil: ' + e.message); }
+
+  // 3. jalankan engine sungguhan
+  var st = add(null, 'Memuat engine (99 MB, bisa 10–60 dtk)…'), t0 = Date.now();
+  try {
+    var w = new Worker(ENGINE);
+    await new Promise(function (ok, no) {
+      var t = setTimeout(function () { no(new Error('timeout 120 dtk')); }, 120000);
+      w.onerror = function (e) { clearTimeout(t); no(new Error(e.message || 'worker error')); };
+      w.onmessage = function (e) { if (String(e.data) === 'uciok') { clearTimeout(t); ok(); } };
+      w.postMessage('uci');
+    });
+    st.style.color = '#81b64c'; st.textContent = '✅ Engine hidup (uciok) dalam ' + ((Date.now() - t0) / 1000).toFixed(1) + ' dtk';
+    w.terminate();
+  } catch (e) { st.style.color = '#ff6b6b'; st.textContent = '❌ Engine gagal: ' + e.message; }
+})();
+</script></body></html>

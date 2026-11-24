@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Analisis Kalibrasi - GhostChess</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 20px;
+  line-height: 1.5;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 { color: #58a6ff; margin-bottom: 5px; }
+.subtitle { color: #8b949e; margin-bottom: 20px; }
+textarea {
+  width: 100%;
+  height: 200px;
+  background: #161b22;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+textarea:focus { border-color: #58a6ff; outline: none; }
+.btn-group { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+button {
+  background: #238636;
+  color: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { background: #2ea043; }
+button.secondary { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
+button.secondary:hover { background: #30363d; }
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+}
+.card h2 { color: #58a6ff; margin: 0 0 15px; font-size: 16px; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+.card h3 { color: #8b949e; margin: 15px 0 10px; font-size: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+.stat { text-align: center; }
+.stat .value { font-size: 28px; font-weight: 700; }
+.stat .label { font-size: 12px; color: #8b949e; text-transform: uppercase; }
+.stat.good .value { color: #3fb950; }
+.stat.bad .value { color: #f85149; }
+.stat.warning .value { color: #d29922; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #30363d; }
+th { color: #8b949e; font-weight: 600; }
+tr:hover { background: #21262d; }
+.suggestion {
+  background: #1f2937;
+  border-left: 3px solid #f85149;
+  padding: 12px 15px;
+  margin: 10px 0;
+  border-radius: 0 6px 6px 0;
+}
+.suggestion.good { border-left-color: #3fb950; }
+.suggestion code { background: #0d1117; padding: 2px 6px; border-radius: 4px; font-size: 12px; display: block; margin-top: 8px; }
+.priority {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 8px;
+}
+.priority-HIGH { background: #f85149; color: #fff; }
+.priority-MEDIUM { background: #d29922; color: #000; }
+.priority-LOW { background: #3fb950; color: #000; }
+.outlier-row { background: #3d1f1f; }
+.diff-positive { color: #f85149; }
+.diff-negative { color: #58a6ff; }
+.diff-zero { color: #3fb950; }
+.hidden { display: none; }
+.loading { color: #8b949e; font-style: italic; }
+.error { color: #f85149; background: #3d1f1f; padding: 10px; border-radius: 6px; }
+pre { background: #0d1117; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+.tuning-code { background: #1f2937; padding: 15px; border-radius: 6px; margin: 10px 0; }
+.tuning-code code { display: block; color: #7ee787; font-family: monospace; font-size: 14px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>📊 Analisis Hasil Kalibrasi</h1>
+<p class="subtitle">Analisis JSON dari kalibrasi otomatis (validasi.html) untuk evaluate dan tuning model</p>
+
+<div class="card">
+  <h2>📥 Input Data</h2>
+  <textarea id="jsonInput" placeholder="Paste JSON hasil kalibrasi di sini..."></textarea>
+  <div class="btn-group">
+    <button onclick="runAnalysis()">🔍 Analisis</button>
+    <button class="secondary" onclick="loadSampleData()">📋 Load Sample</button>
+    <button class="secondary" onclick="clearData()">🗑️ Clear</button>
+  </div>
+</div>
+
+<div id="errorBox" class="error hidden"></div>
+<div id="loadingBox" class="loading hidden">⏳ Menganalisis...</div>
+
+<div id="results" class="hidden">
+  <!-- Summary Stats -->
+  <div class="card">
+    <h2>📈 Statistik Overall</h2>
+    <div class="grid" id="overallStats"></div>
+  </div>
+
+  <!-- Per Rating -->
+  <div class="card">
+    <h2>📊 Per Range Rating</h2>
+    <div id="perRating"></div>
+  </div>
+
+  <!-- Per Time Control -->
+  <div class="card">
+    <h2>⏱️ Per Kontrol Waktu</h2>
+    <div id="perTimeControl"></div>
+  </div>
+
+  <!-- Outliers -->
+  <div class="card">
+    <h2>⚠️ Outliers (>2 std dev)</h2>
+    <div id="outliers"></div>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="card">
+    <h2>💡 Saran Tuning</h2>
+    <div id="suggestions"></div>
+  </div>
+
+  <!-- Auto-Tuner Suggestions -->
+  <div class="card">
+    <h2>🎛️ Suggested Parameter Changes</h2>
+    <div id="tuningSuggestions"></div>
+  </div>
+
+  <!-- Raw Report -->
+  <div class="card">
+    <h2>📄 Report JSON</h2>
+    <pre id="rawReport"></pre>
+  </div>
+</div>
+
+<script src="js/kalibrasi-analysis.js"></script>
+<script src="js/auto-tuner.js"></script>
+<script>
+// Fungsi formatting
+function fmt(n, decimals = 2) {
+  if (n === null || n === undefined || isNaN(n)) return '–';
+  return n.toFixed(decimals);
+}
+
+function fmtSigned(n, decimals = 2) {
+  if (n === null || n === undefined || isNaN(n)) return '–';
+  return (n >= 0 ? '+' : '') + n.toFixed(decimals);
+}
+
+function statClass(n, thresholds = [1, 2, 3]) {
+  const abs = Math.abs(n);
+  if (abs <= thresholds[0]) return 'good';
+  if (abs <= thresholds[1]) return 'warning';
+  return 'bad';
+}
+
+function renderStats(stats) {
+  return `
+    <div class="stat">
+      <div class="value">${stats.n}</div>
+      <div class="label">Sample Size</div>
+    </div>
+    <div class="stat ${statClass(stats.bias, [0.5, 1, 2])}">
+      <div class="value">${fmtSigned(stats.bias)}</div>
+      <div class="label">Bias (avg diff)</div>
+    </div>
+    <div class="stat ${statClass(stats.mae, [1, 2, 3])}">
+      <div class="value">${fmt(stats.mae)}</div>
+      <div class="label">MAE</div>
+    </div>
+    <div class="stat ${statClass(stats.rmse, [2, 3, 5])}">
+      <div class="value">${fmt(stats.rmse)}</div>
+      <div class="label">RMSE</div>
+    </div>
+    <div class="stat">
+      <div class="value">${fmt(stats.stdDev)}</div>
+      <div class="label">Std Dev</div>
+    </div>
+    <div class="stat">
+      <div class="value">${fmtSigned(stats.min)}</div>
+      <div class="label">Min</div>
+    </div>
+    <div class="stat">
+      <div class="value">${fmtSigned(stats.max)}</div>
+      <div class="label">Max</div>
+    </div>
+  `;
+}
+
+function renderPerRating(data) {
+  if (!data || Object.keys(data).length === 0) {
+    return '<p class="loading">Tidak ada data per rating</p>';
+  }
+  
+  let html = '<table><tr><th>Rating</th><th>N</th><th>Bias</th><th>MAE</th><th>StdDev</th><th>Min</th><th>Max</th></tr>';
+  
+  const order = ['<1200', '1200-1400', '1400-1600', '1600-1800', '1800-2000', '2000-2200', '2200-2400', '2400+'];
+  
+  for (const range of order) {
+    if (!data[range]) continue;
+    const s = data[range].stats;
+    html += `<tr>
+      <td>${range}</td>
+      <td>${s.n}</td>
+      <td class="diff-${s.bias >= 0 ? 'positive' : 'negative'}">${fmtSigned(s.bias)}</td>
+      <td>${fmt(s.mae)}</td>
+      <td>${fmt(s.stdDev)}</td>
+      <td>${fmtSigned(s.min)}</td>
+      <td>${fmtSigned(s.max)}</td>
+    </tr>`;
+  }
+  
+  html += '</table>';
+  return html;
+}
+
+function renderPerTimeControl(data) {
+  if (!data || Object.keys(data).length === 0) {
+    return '<p class="loading">Tidak ada data per kontrol waktu</p>';
+  }
+  
+  let html = '<table><tr><th>Time Control</th><th>N</th><th>Bias</th><th>MAE</th><th>StdDev</th></tr>';
+  
+  for (const [tc, item] of Object.entries(data)) {
+    const s = item.stats;
+    html += `<tr>
+      <td>${tc || 'unknown'}</td>
+      <td>${s.n}</td>
+      <td class="diff-${s.bias >= 0 ? 'positive' : 'negative'}">${fmtSigned(s.bias)}</td>
+      <td>${fmt(s.mae)}</td>
+      <td>${fmt(s.stdDev)}</td>
+    </tr>`;
+  }
+  
+  html += '</table>';
+  return html;
+}
+
+function renderOutliers(data) {
+  if (!data.outliers || data.outliers.length === 0) {
+    return '<p class="loading">Tidak ada outliers</p>';
+  }
+  
+  let html = `<p>Ditemukan ${data.outliers.length} outliers (cutoff: ±${fmt(data.cutoff, 1)} poin)</p>`;
+  html += '<table><tr><th>Player</th><th>ELO</th><th>Side</th><th>App</th><th>CC</th><th>Diff</th><th>TC</th></tr>';
+  
+  for (const o of data.outliers.slice(0, 20)) {
+    html += `<tr class="outlier-row">
+      <td><a href="${o.url}" target="_blank">${o.player || '?'}</a></td>
+      <td>${o.elo || '?'}</td>
+      <td>${o.side}</td>
+      <td>${fmt(o.appAcc, 1)}</td>
+      <td>${fmt(o.ccAcc, 1)}</td>
+      <td class="diff-${o.diff >= 0 ? 'positive' : 'negative'}">${fmtSigned(o.diff, 1)}</td>
+      <td>${o.tc || '?'}</td>
+    </tr>`;
+  }
+  
+  html += '</table>';
+  return html;
+}
+
+function renderSuggestions(data) {
+  if (!data.suggestions || data.suggestions.length === 0) {
+    return '<div class="suggestion good">✅ Model sudah cukup akurat! Tidak ada saran tuning major.</div>';
+  }
+  
+  let html = `<p><strong>Summary:</strong> ${data.summary}</p>`;
+  
+  for (const s of data.suggestions) {
+    html += `<div class="suggestion">
+      <strong>${s.type}:</strong> ${s.reason}<br>
+      <strong>Action:</strong> ${s.action || s.suggestedChange || '-'}<br>
+      ${s.code ? `<code>${s.code}</code>` : ''}
+    </div>`;
+  }
+  
+  return html;
+}
+
+// Main analysis function
+function runAnalysis() {
+  const input = document.getElementById('jsonInput').value.trim();
+  const errorBox = document.getElementById('errorBox');
+  const loadingBox = document.getElementById('loadingBox');
+  const results = document.getElementById('results');
+  
+  errorBox.classList.add('hidden');
+  results.classList.add('hidden');
+  
+  if (!input) {
+    errorBox.textContent = '⚠️ Paste JSON hasil kalibrasi terlebih dahulu';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  
+  loadingBox.classList.remove('hidden');
+  
+  setTimeout(() => {
+    try {
+      const data = KalibrasiAnalysis.parseJSON(input);
+      const report = KalibrasiAnalysis.generateReport(data);
+      
+      // Render overall stats
+      document.getElementById('overallStats').innerHTML = renderStats(report.overall);
+      
+      // Render per rating
+      document.getElementById('perRating').innerHTML = renderPerRating(report.perRating);
+      
+      // Render per time control
+      document.getElementById('perTimeControl').innerHTML = renderPerTimeControl(report.perTimeControl);
+      
+      // Render outliers
+      document.getElementById('outliers').innerHTML = renderOutliers(report.outliers);
+      
+      // Render suggestions
+      document.getElementById('suggestions').innerHTML = renderSuggestions(report.tuning);
+      
+      // Auto-Tuner analysis
+      try {
+        const tuner = new AutoTuner(input);
+        tuner.analyze();
+        const tuningResults = tuner.suggestAll();
+        
+        let tuningHtml = '';
+        
+        // Summary
+        tuningHtml += `<div class="suggestion ${tuningResults.accuracy.length === 0 ? 'good' : ''}">
+          <strong>Auto-Tuner Summary:</strong><br>
+          Records: ${tuner.results.overall.n} | 
+          Bias: ${fmtSigned(tuner.results.overall.mean)} | 
+          MAE: ${fmt(tuner.results.overall.mae)} |
+          StdDev: ${fmt(tuner.results.overall.stdDev)}
+        </div>`;
+        
+        if (tuningResults.accuracy.length > 0) {
+          tuningHtml += '<h3>Accuracy Model Suggestions</h3>';
+          for (const s of tuningResults.accuracy) {
+            const priorityClass = s.priority === 'HIGH' ? 'HIGH' : (s.priority === 'MEDIUM' ? 'MEDIUM' : 'LOW');
+            tuningHtml += `<div class="suggestion">
+              <span class="priority priority-${priorityClass}">${s.priority}</span>
+              <strong>Issue:</strong> ${s.issue}<br>
+              <strong>Current:</strong> ${s.currentValue || '-'}<br>
+              <strong>Change:</strong> ${s.suggestedChange || '-'}<br>
+              ${s.formula ? `<div class="tuning-code"><code>${s.formula}</code></div>` : ''}
+            </div>`;
+          }
+        }
+        
+        if (tuningResults.rating.length > 0) {
+          tuningHtml += '<h3>Rating Model Suggestions</h3>';
+          for (const s of tuningResults.rating) {
+            const priorityClass = s.priority === 'HIGH' ? 'HIGH' : (s.priority === 'MEDIUM' ? 'MEDIUM' : 'LOW');
+            tuningHtml += `<div class="suggestion">
+              <span class="priority priority-${priorityClass}">${s.priority}</span>
+              <strong>Issue:</strong> ${s.issue}<br>
+              <strong>Change:</strong> ${s.suggestedChange || '-'}<br>
+              ${s.formula ? `<div class="tuning-code"><code>${s.formula}</code></div>` : ''}
+            </div>`;
+          }
+        }
+        
+        document.getElementById('tuningSuggestions').innerHTML = tuningHtml || '<p class="loading">No suggestions</p>';
+        
+      } catch (e) {
+        console.error('AutoTuner error:', e);
+        document.getElementById('tuningSuggestions').innerHTML = '<p class="loading">AutoTuner error: ' + e.message + '</p>';
+      }
+      
+      // Render raw JSON
+      document.getElementById('rawReport').textContent = JSON.stringify(report, null, 2);
+      
+      // Show results
+      loadingBox.classList.add('hidden');
+      results.classList.remove('hidden');
+      
+      // Scroll to results
+      results.scrollIntoView({ behavior: 'smooth' });
+      
+    } catch (e) {
+      errorBox.textContent = '❌ Error: ' + e.message;
+      errorBox.classList.remove('hidden');
+      loadingBox.classList.add('hidden');
+    }
+  }, 100);
+}
+
+// Load sample data (for testing)
+function loadSampleData() {
+  const sample = {
+    format: 'game-review-kalibrasi-1',
+    model: 'estimasi-2026.10-p14',
+    createdAt: new Date().toISOString(),
+    count: 10,
+    records: []
+  };
+  
+  // Generate sample data with realistic bias
+  const ratings = [1300, 1500, 1700, 1900, 2100];
+  const tcs = ['bullet', 'blitz', 'rapid'];
+  
+  for (let i = 0; i < 10; i++) {
+    const wElo = ratings[Math.floor(Math.random() * ratings.length)];
+    const bElo = ratings[Math.floor(Math.random() * ratings.length)];
+    const tc = tcs[Math.floor(Math.random() * tcs.length)];
+    const ccW = 70 + Math.random() * 25;
+    const ccB = 70 + Math.random() * 25;
+    // Simulate slight positive bias (app overestimates by ~0.8 points)
+    const appW = ccW + 0.8 + (Math.random() - 0.5) * 3;
+    const appB = ccB + 0.8 + (Math.random() - 0.5) * 3;
+    
+    sample.records.push({
+      url: `https://www.chess.com/game/live/${100000000 + i}`,
+      tclass: tc,
+      w: { u: `player${i}a`, elo: wElo },
+      b: { u: `player${i}b`, elo: bElo },
+      cc: { w: ccW, b: ccB },
+      app: { w: appW, b: appB },
+      mv: Array(40).fill(null).map((_, idx) => ['w', 'best', {cp: 0}, {cp: 0}, null])
+    });
+  }
+  
+  document.getElementById('jsonInput').value = JSON.stringify(sample, null, 2);
+}
+
+// Clear data
+function clearData() {
+  document.getElementById('jsonInput').value = '';
+  document.getElementById('results').classList.add('hidden');
+  document.getElementById('errorBox').classList.add('hidden');
+}
+</script>
+</body>
+</html>

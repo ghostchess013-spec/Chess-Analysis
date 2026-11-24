@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Validasi vs Chess.com</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#1a1a1a;color:#eee;padding:14px;line-height:1.4;max-width:720px;margin:0 auto}
+h1{font-size:18px;margin:4px 0}h2{font-size:15px;margin:16px 0 6px;color:#aaa}p,.muted{color:#aaa;font-size:13px}
+textarea{width:100%;min-height:130px;background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:8px;font-family:monospace;font-size:12px;box-sizing:border-box}
+button,select,input{font:inherit}button{background:#81b64c;color:#10200a;border:0;border-radius:8px;padding:12px 16px;font-weight:800;margin:6px 6px 6px 0}
+button.alt{background:#333;color:#eee}button:disabled{opacity:.45}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid #2c2c2c;padding:4px 6px;text-align:center}th{color:#aaa;font-weight:600}td:first-child,th:first-child{text-align:left}
+input.n{width:46px;background:#222;color:#eee;border:1px solid #444;border-radius:6px;padding:4px;text-align:center}
+.bar{height:8px;background:#333;border-radius:4px;overflow:hidden;margin:8px 0}.bar>i{display:block;height:100%;width:0;background:#81b64c}
+input.t{width:100%;box-sizing:border-box;background:#222;color:#eee;border:1px solid #444;border-radius:8px;padding:10px;margin:4px 0 8px}
+.opts{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:6px 0}.opts select{background:#222;color:#eee;border:1px solid #444;border-radius:6px;padding:6px}.chk{display:inline-flex;gap:4px;align-items:center}
+hr{border:0;border-top:1px solid #333;margin:22px 0}
+#kTable td:not(:first-child){white-space:nowrap}
+.bad{color:#ff8b7a}.good{color:#81b64c}.box{background:#222;border-radius:8px;padding:10px;margin:8px 0;font-size:13px}.hidden{display:none}
+</style></head><body>
+<h1>Validasi vs Chess.com</h1>
+<h2>Kalibrasi otomatis dari API Chess.com</h2>
+<p>Mengambil partai yang punya akurasi Chess.com (partai yang pernah di-review), menganalisisnya satu per satu, lalu menghasilkan satu JSON untuk dikirim. Sekitar 1 menit per partai dengan engine Full. Biarkan layar menyala dan HP di-charge. Hasil tersimpan bertahap: kalau terhenti, tekan Mulai lagi untuk melanjutkan.</p>
+<div class="box">
+  <label>Username Chess.com (pisahkan dengan koma; partai Anda sendiri sudah cukup, lawan ikut terhitung)<input id="kUsers" class="t" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="username1, username2"></label>
+  <div class="opts">
+    <label>Bulan terakhir <select id="kMonths"><option>1</option><option selected>2</option><option>3</option><option>6</option></select></label>
+    <label>Jumlah partai <select id="kMax"><option>10</option><option>20</option><option selected>30</option><option>50</option></select></label>
+  </div>
+  <div class="opts">
+    <span class="chk"><input type="checkbox" name="kClass" value="bullet" checked>bullet</span>
+    <span class="chk"><input type="checkbox" name="kClass" value="blitz" checked>blitz</span>
+    <span class="chk"><input type="checkbox" name="kClass" value="rapid" checked>rapid</span>
+    <span class="chk"><input type="checkbox" name="kClass" value="daily">daily</span>
+  </div>
+  <div class="opts">
+    <label>Engine <select id="kEngine"><option value="full" selected>Full (99 MB)</option><option value="lite">Lite</option></select></label>
+    <label>Kedalaman <select id="kDepth"><option>12</option><option selected>15</option><option>18</option></select></label>
+  </div>
+</div>
+<div><button id="kRun">Mulai kalibrasi</button><button id="kStop" class="alt hidden">Hentikan</button><button id="kClear" class="alt">Hapus hasil</button></div>
+<div id="kStatus" class="muted"></div>
+<div class="bar"><i id="kBar"></i></div><div class="bar"><i id="kBar2"></i></div>
+<div id="kSum" class="box hidden"></div>
+<table id="kTable"></table>
+<div><button id="kCopy" class="alt">Salin JSON kalibrasi</button><button id="kDl" class="alt">Unduh JSON</button></div><div id="kEx" class="muted"></div>
+<hr>
+<h2>Validasi satu partai</h2>
+<p>Tempel PGN partai yang sudah di-review di Chess.com (dari tombol Bagikan; tanda <code>$</code> ikut terbawa). Isi angka ringkasan Chess.com bila ada. Hasil di bawah menunjukkan beda aplikasi vs Chess.com.</p>
+<h2>PGN</h2><textarea id="pgn" placeholder="[Event &quot;Live Chess&quot;] ... 1. e4 e5 ..."></textarea>
+<h2>Ringkasan Chess.com (opsional)</h2>
+<table id="ccTable"></table>
+<p class="muted">Akurasi dan Rating Permainan: isi angka yang tampil di layar ringkasan Chess.com.</p>
+<h2>Analisis</h2>
+<label>Kedalaman <select id="depth"><option>12</option><option selected>15</option><option>18</option></select></label>
+<div><button id="run">Jalankan analisis</button><button id="cancel" class="alt hidden">Batalkan</button></div>
+<div id="status" class="muted"></div><div class="bar"><i id="barfill"></i></div>
+<div id="result" class="hidden">
+  <h2>Hasil</h2><div id="summary" class="box"></div>
+  <table id="cmpTable"></table>
+  <h2>Perbedaan per langkah dengan tanda <code>$</code> Chess.com</h2><div id="agree" class="box"></div><table id="mmTable"></table>
+  <div><button id="dl" class="alt">Unduh data JSON</button><button id="cp" class="alt">Salin JSON</button></div><div id="exstat" class="muted"></div>
+</div>
+<script src="js/chess.js"></script>
+<script src="js/openings.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/estimates.js"></script>
+<script src="js/engine-config.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/validasi.js"></script>
+<script src="js/kalibrasi.js"></script>
+<script>
+(function () {
+  var V = window.Validasi, $ = function (id) { return document.getElementById(id); };
+  var NAMES = { brilliant: 'Brilian', great: 'Bagus', book: 'Buku', best: 'Terbaik', excellent: 'Sangat Baik', good: 'Baik', inaccuracy: 'Tidak Akurat', mistake: 'Kesalahan', miss: 'Terlewat', blunder: 'Blunder' };
+  var eng = null, cancelled = false, lastExport = null;
+  // tabel isian Chess.com
+  var t = '<tr><th></th><th>Putih</th><th>Hitam</th></tr><tr><td>Akurasi</td><td><input class="n" id="ccAccW" inputmode="decimal"></td><td><input class="n" id="ccAccB" inputmode="decimal"></td></tr><tr><td>Rating Permainan</td><td><input class="n" id="ccRatW" inputmode="numeric"></td><td><input class="n" id="ccRatB" inputmode="numeric"></td></tr>';
+  V.ORDER.forEach(function (k) { t += '<tr><td>' + NAMES[k] + '</td><td><input class="n" id="ccw_' + k + '" inputmode="numeric"></td><td><input class="n" id="ccb_' + k + '" inputmode="numeric"></td></tr>'; });
+  $('ccTable').innerHTML = t;
+  function num(id) { var v = $(id).value.trim().replace(',', '.'); return v === '' || isNaN(+v) ? undefined : +v; }
+  function readCC() {
+    var cc = { w: {}, b: {}, accW: num('ccAccW'), accB: num('ccAccB'), ratingW: num('ccRatW'), ratingB: num('ccRatB') };
+    V.ORDER.forEach(function (k) { cc.w[k] = num('ccw_' + k); cc.b[k] = num('ccb_' + k); });
+    return cc;
+  }
+  function setStatus(s) { $('status').textContent = s; }
+  function fmt(x, d) { return x === undefined || x === null ? '–' : (typeof x === 'number' ? x.toFixed(d || 0) : x); }
+  function diffCell(app, cc, d) { if (cc === undefined || cc === null) return ''; var df = app - cc; return ' <span class="' + (Math.abs(df) < 0.5 ? 'good' : 'bad') + '">(' + (df > 0 ? '+' : '') + df.toFixed(d || 0) + ')</span>'; }
+  function render(game, report, cc, marks) {
+    var S = V.compareSummary(report, cc), M = V.compareMarks(report, marks);
+    var m = report.meta || {};
+    var h = '<b>' + (game.headers.White || '?') + ' vs ' + (game.headers.Black || '?') + '</b><br>';
+    h += 'Akurasi: Putih ' + fmt(S.accuracy.w.app, 1) + diffCell(S.accuracy.w.app, S.accuracy.w.cc, 1) + ' · Hitam ' + fmt(S.accuracy.b.app, 1) + diffCell(S.accuracy.b.app, S.accuracy.b.cc, 1) + '<br>';
+    h += 'Rating Permainan: Putih ' + fmt(S.rating.w.app) + diffCell(S.rating.w.app, S.rating.w.cc) + ' · Hitam ' + fmt(S.rating.b.app) + diffCell(S.rating.b.app, S.rating.b.cc) + '<br>';
+    h += '<span class="muted">Engine: ' + (m.engine || '?') + ' · kedalaman ' + (m.depth || '?') + ' · MultiPV ' + (m.multipv || '?') + ' · model ' + (report.model || '?') + '</span>';
+    $('summary').innerHTML = h;
+    var c = '<tr><th>Kelas</th><th>Putih (app/CC)</th><th>Hitam (app/CC)</th></tr>';
+    S.classes.forEach(function (r) {
+      var bw = r.ccW !== undefined && r.ccW !== r.appW, bb = r.ccB !== undefined && r.ccB !== r.appB;
+      c += '<tr><td>' + NAMES[r.cls] + '</td><td class="' + (bw ? 'bad' : '') + '">' + r.appW + ' / ' + fmt(r.ccW) + '</td><td class="' + (bb ? 'bad' : '') + '">' + r.appB + ' / ' + fmt(r.ccB) + '</td></tr>';
+    });
+    $('cmpTable').innerHTML = c;
+    var has = marks.some(function (x) { return x; });
+    $('agree').innerHTML = has ? 'Kesesuaian dengan tanda PGN: <b>' + M.agree + ' dari ' + M.total + ' (' + Math.round(100 * M.agree / M.total) + '%)</b>. Langkah tanpa tanda dianggap Terbaik/Sangat Baik/Baik/Buku. Tanda Terlewat sering tidak ada di PGN.' : 'PGN ini tidak memuat tanda <code>$</code> Chess.com, jadi perbandingan per langkah tidak tersedia.';
+    var mm = '<tr><th>#</th><th>Langkah</th><th>Aplikasi</th><th>Chess.com</th></tr>';
+    M.mismatches.forEach(function (r) { mm += '<tr><td>' + r.ply + '</td><td>' + r.san + '</td><td>' + (NAMES[r.app] || r.app) + '</td><td>' + (NAMES[r.cc] || r.cc) + '</td></tr>'; });
+    $('mmTable').innerHTML = has ? mm : '';
+    lastExport = V.buildExport(game, report, cc, marks);
+    $('result').classList.remove('hidden');
+  }
+  $('run').onclick = async function () {
+    var btn = $('run'); btn.disabled = true; cancelled = false; $('cancel').classList.remove('hidden'); $('result').classList.add('hidden'); $('barfill').style.width = '0';
+    try {
+      var pgn = $('pgn').value, game = V.parsePgn(pgn), marks = V.parseNags(pgn), cc = readCC();
+      if (!eng) {
+        setStatus('Memuat engine…'); eng = new Engine(Engine.pathFor('full'));
+        Engine.onLoad(function (l) { if (!eng.ready) setStatus(l.phase === 'download' ? 'Mengunduh engine ' + Math.round((l.percent || 0) * 100) + '%' : l.phase === 'init' ? 'Menyiapkan engine…' : 'Memuat engine…'); });
+        await eng.readyPromise;
+      }
+      var depth = parseInt($('depth').value, 10) || 15;
+      var report = await Analyzer.analyzeGame(game, eng, { depth: depth, cancelled: function () { return cancelled; }, onProgress: function (p) { $('barfill').style.width = Math.round(p * 100) + '%'; setStatus('Menganalisis… ' + Math.round(p * 100) + '%'); } });
+      if (!report) { setStatus('Dibatalkan.'); }
+      else { setStatus('Selesai.'); render(game, report, cc, marks); }
+    } catch (e) { setStatus('Galat: ' + (e && e.message ? e.message : e)); }
+    btn.disabled = false; $('cancel').classList.add('hidden');
+  };
+  $('cancel').onclick = function () { cancelled = true; if (eng) eng.stop(); setStatus('Membatalkan…'); };
+  $('dl').onclick = function () {
+    if (!lastExport) return;
+    try {
+      var blob = new Blob([JSON.stringify(lastExport, null, 1)], { type: 'application/json' }), a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'validasi-' + ((lastExport.headers && lastExport.headers.White) || 'partai') + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      $('exstat').textContent = 'Berkas diunduh.';
+    } catch (e) { $('exstat').textContent = 'Unduh gagal: ' + e.message + '. Pakai Salin JSON.'; }
+  };
+  $('cp').onclick = async function () {
+    if (!lastExport) return;
+    var txt = JSON.stringify(lastExport, null, 1), ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch (e) {}
+    if (!ok) { try { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); ok = document.execCommand('copy'); document.body.removeChild(ta); } catch (e) {} }
+    $('exstat').textContent = ok ? 'JSON disalin (' + Math.round(txt.length / 1024) + ' KB).' : 'Gagal menyalin.';
+  };
+})();
+</script></body></html>

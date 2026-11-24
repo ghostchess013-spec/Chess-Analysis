@@ -1,0 +1,261 @@
+[
+ {
+  "id": "9rdwe",
+  "name": "Green",
+  "file": "9rdwe.png",
+  "light": "#ebecd0",
+  "dark": "#739552"
+ },
+ {
+  "id": "dark_wood",
+  "name": "Wood",
+  "file": "dark_wood.webp",
+  "light": "#c3a470",
+  "dark": "#7e5736"
+ },
+ {
+  "id": "glass",
+  "name": "Glass",
+  "file": "glass.webp",
+  "light": "#717b8e",
+  "dark": "#292f3d"
+ },
+ {
+  "id": "brown",
+  "name": "Brown",
+  "file": "brown.png",
+  "light": "#edd6b0",
+  "dark": "#b88762"
+ },
+ {
+  "id": "icy_sea",
+  "name": "Icy Sea",
+  "file": "icy_sea.webp",
+  "light": "#d4e0e5",
+  "dark": "#80a1b5"
+ },
+ {
+  "id": "newspaper",
+  "name": "Newspaper",
+  "file": "newspaper.webp",
+  "light": "#d0cec5",
+  "dark": "#a3a29c"
+ },
+ {
+  "id": "walnut",
+  "name": "Walnut",
+  "file": "walnut.webp",
+  "light": "#ba9e79",
+  "dark": "#74543b"
+ },
+ {
+  "id": "sky",
+  "name": "Sky",
+  "file": "sky.png",
+  "light": "#f0f1f0",
+  "dark": "#c4d8e4"
+ },
+ {
+  "id": "lolz",
+  "name": "Lolz",
+  "file": "lolz.webp",
+  "light": "#d9e3e4",
+  "dark": "#9ba4a2"
+ },
+ {
+  "id": "stone",
+  "name": "Stone",
+  "file": "stone.webp",
+  "light": "#b1ada6",
+  "dark": "#4e4d4b"
+ },
+ {
+  "id": "bases",
+  "name": "Bases",
+  "file": "bases.webp",
+  "light": "#efca9e",
+  "dark": "#c56e3a"
+ },
+ {
+  "id": "8_bit",
+  "name": "8-Bit",
+  "file": "8_bit.png",
+  "light": "#f3f3f4",
+  "dark": "#6a9b41"
+ },
+ {
+  "id": "marble",
+  "name": "Marble",
+  "file": "marble.webp",
+  "light": "#c4bda8",
+  "dark": "#716d67"
+ },
+ {
+  "id": "purple",
+  "name": "Purple",
+  "file": "purple.png",
+  "light": "#f0f1f0",
+  "dark": "#8476ba"
+ },
+ {
+  "id": "translucent",
+  "name": "Overlay",
+  "file": "translucent.png",
+  "light": "#efefef",
+  "dark": "#ababab"
+ },
+ {
+  "id": "metal",
+  "name": "Metal",
+  "file": "metal.webp",
+  "light": "#d8d8d8",
+  "dark": "#767675"
+ },
+ {
+  "id": "tournament",
+  "name": "Tournament",
+  "file": "tournament.webp",
+  "light": "#eaeae7",
+  "dark": "#32674b"
+ },
+ {
+  "id": "dash",
+  "name": "Dash",
+  "file": "dash.webp",
+  "light": "#bb8e53",
+  "dark": "#6b3927"
+ },
+ {
+  "id": "burled_wood",
+  "name": "Burled Wood",
+  "file": "burled_wood.webp",
+  "light": "#e8c299",
+  "dark": "#744125"
+ },
+ {
+  "id": "blue",
+  "name": "Dark Blue",
+  "file": "blue.png",
+  "light": "#eae9d2",
+  "dark": "#4b7399"
+ },
+ {
+  "id": "bubblegum",
+  "name": "Bubblegum",
+  "file": "bubblegum.png",
+  "light": "#fefffe",
+  "dark": "#fbd9e1"
+ },
+ {
+  "id": "checkers",
+  "name": "Checkers",
+  "file": "checkers.png",
+  "light": "#c64d52",
+  "dark": "#333333"
+ },
+ {
+  "id": "graffiti",
+  "name": "Graffiti",
+  "file": "graffiti.webp",
+  "light": "#919191",
+  "dark": "#a78864"
+ },
+ {
+  "id": "light",
+  "name": "Light",
+  "file": "light.png",
+  "light": "#d8d9d8",
+  "dark": "#a8a9a8"
+ },
+ {
+  "id": "neon",
+  "name": "Neon",
+  "file": "neon.webp",
+  "light": "#c4c6c6",
+  "dark": "#665d59"
+ },
+ {
+  "id": "orange",
+  "name": "Orange",
+  "file": "orange.png",
+  "light": "#fae4ae",
+  "dark": "#d18815"
+ },
+ {
+  "id": "parchment",
+  "name": "Parchment",
+  "file": "parchment.webp",
+  "light": "#d8d3b6",
+  "dark": "#b0975e"
+ },
+ {
+  "id": "red",
+  "name": "Red",
+  "file": "red.png",
+  "light": "#f5dbc3",
+  "dark": "#bb5746"
+ },
+ {
+  "id": "sand",
+  "name": "Sand",
+  "file": "sand.webp",
+  "light": "#d3c3b6",
+  "dark": "#c1ab97"
+ },
+ {
+  "id": "tan",
+  "name": "Tan",
+  "file": "tan.png",
+  "light": "#edcba5",
+  "dark": "#d8a46d"
+ },
+ {
+  "id": "4fs27",
+  "name": "Blue",
+  "file": "4fs27.png",
+  "light": "#f2f6fa",
+  "dark": "#5596f2"
+ },
+ {
+  "id": "g715q",
+  "name": "Pink",
+  "file": "g715q.png",
+  "light": "#f5f0f1",
+  "dark": "#ec94a4"
+ },
+ {
+  "id": "my2xa",
+  "name": "Chess The Musical",
+  "file": "my2xa.png",
+  "light": "#d7d4d4",
+  "dark": "#807b76"
+ },
+ {
+  "id": "bju81",
+  "name": "Event - Naroditsky Memorial",
+  "file": "bju81.png",
+  "light": "#fbfae9",
+  "dark": "#cea861"
+ },
+ {
+  "id": "z4m3d",
+  "name": "Event - Esports World Cup 2026",
+  "file": "z4m3d.png",
+  "light": "#f7f7f7",
+  "dark": "#ccaa6c"
+ },
+ {
+  "id": "6m5lc",
+  "name": "Sky and Sea",
+  "file": "6m5lc.webp",
+  "light": "#91bece",
+  "dark": "#064c86"
+ },
+ {
+  "id": "ohdxn",
+  "name": "Band Class",
+  "file": "ohdxn.webp",
+  "light": "#ebddb6",
+  "dark": "#908f91"
+ }
+]

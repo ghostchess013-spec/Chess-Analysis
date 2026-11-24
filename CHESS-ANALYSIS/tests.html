@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tes unit Game Review</title>
+<style>body{font-family:system-ui,sans-serif;background:#1a1a1a;color:#eee;padding:14px;line-height:1.4}h1{font-size:18px}
+.sum{font-weight:800;padding:10px;border-radius:8px;margin:10px 0}.ok{background:#27421a}.bad{background:#5a1d1d}
+.g{margin-top:12px;font-weight:700;color:#aaa}.r{font-size:13px;padding:3px 0;border-bottom:1px solid #2c2c2c}.r b{color:#81b64c}.r.f b{color:#ff6b6b}.d{color:#ffb4a8;font-size:12px}</style></head>
+<body><h1>Tes unit Game Review</h1><div id="sum" class="sum">Menjalankan…</div><div id="out"></div>
+<script src="js/chess.js"></script>
+<script src="js/icons.js?v=16"></script>
+<script src="js/assets.js?v=16"></script>
+<script src="js/estimates.js"></script>
+<script src="js/analyzer.js"></script>
+<script src="js/official.js"></script>
+<script src="js/tests.js"></script>
+<script>
+window.GameReviewTests.runAll().then(function (res) {
+  var pass = res.filter(function (r) { return r.ok; }).length, last = '', html = '';
+  res.forEach(function (r) {
+    if (r.group !== last) { html += '<div class="g">' + r.group + '</div>'; last = r.group; }
+    html += '<div class="r' + (r.ok ? '' : ' f') + '"><b>' + (r.ok ? '✓' : '✗') + '</b> ' + r.name.replace(/</g, '&lt;') + (r.ok ? '' : '<div class="d">' + String(r.detail).replace(/</g, '&lt;') + '</div>') + '</div>';
+  });
+  document.getElementById('out').innerHTML = html;
+  var s = document.getElementById('sum'); s.textContent = pass + ' dari ' + res.length + ' tes lulus'; s.className = 'sum ' + (pass === res.length ? 'ok' : 'bad');
+}).catch(function (e) { document.getElementById('sum').textContent = 'Galat: ' + e.message; document.getElementById('sum').className = 'sum bad'; });
+</script></body></html>
